@@ -37,5 +37,10 @@
             <artifactId>smack-extensions</artifactId>
             <version>${smack.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-experimental</artifactId>
+            <version>${smack.version}</version>
+        </dependency>
     </dependencies>
 </project>
