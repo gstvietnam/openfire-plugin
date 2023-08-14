@@ -44,37 +44,33 @@ public class OidcTokenValidator {
     public OidcTokenValidator() {
     }
 
-    public JwtClaims verifyToken(String token) throws MalformedClaimException, InvalidJwtException,
-            NoSuchAlgorithmException, InvalidKeySpecException, JoseException, IOException {
-
-        //TODO: Read the auth server from the configuration instead of the token
-        String url = getIssuerFromToken(token);
+    public JwtClaims verifyToken(String token) throws InvalidJwtException,
+        NoSuchAlgorithmException, InvalidKeySpecException, JoseException, IOException {
+        String url = getAuthServerFromConfiguration();
         if (url == null) {
-            throw new IllegalStateException("no issuer found in token");
+            throw new IllegalStateException("no auth server found in configuration");
         }
         Key key = getKeycloakPublicKey(url);
         return verifyClaims(token, key);
     }
 
+    private String getAuthServerFromConfiguration() {
+        return jiveProperties.getProperty("authServer", "");
+    }
+
     String getIssuerFromToken(String token) throws MalformedClaimException, InvalidJwtException {
         JwtConsumer firstPassJwtConsumer = new JwtConsumerBuilder().setSkipAllValidators().setDisableRequireSignature()
-                .setSkipSignatureVerification().build();
-
-        // The first JwtConsumer is basically just used to parse the JWT into a
-        // JwtContext object.
+            .setSkipSignatureVerification().build();
         JwtContext jwtContext = firstPassJwtConsumer.process(token);
-
-        // From the JwtContext we can get the issuer, or whatever else we might need,
-        // to lookup or figure out the kind of validation policy to apply
         return jwtContext.getJwtClaims().getIssuer();
     }
 
     PublicKey getKeycloakPublicKey(String realmURL)
-            throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
         URLConnection conn = new URL(realmURL).openConnection();
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+            new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             String realmInfo = reader.lines().collect(Collectors.joining("\n"));
             Map<String, Object> json = JsonUtil.parseJson(realmInfo);
             String publicKey = (String) json.get("public_key");
@@ -88,25 +84,19 @@ public class OidcTokenValidator {
     }
 
     public JwtClaims verifyClaims(String token, Key key) throws InvalidJwtException {
-
         AlgorithmConstraints algorithmConstraints = new AlgorithmConstraints(ConstraintType.WHITELIST,
-                AlgorithmIdentifiers.RSA_USING_SHA256, AlgorithmIdentifiers.RSA_USING_SHA384);
-
-        // Using info from the JwtContext, this JwtConsumer is set up to verify
-        // the signature and validate the claims.
+            AlgorithmIdentifiers.RSA_USING_SHA256, AlgorithmIdentifiers.RSA_USING_SHA384);
         JwtConsumer secondPassJwtConsumer = new JwtConsumerBuilder()
-                // .setExpectedIssuer(issuer)
-                .setVerificationKey(key).setRequireExpirationTime().setAllowedClockSkewInSeconds(30).setRequireSubject()
-                //Todo: Read audience from configuration
-                .setExpectedAudience("account").setJwsAlgorithmConstraints(algorithmConstraints).build();
-
-        // Finally using the second JwtConsumer to actually validate the JWT. This
-        // operates on
-        // the JwtContext from the first processing pass, which avoids redundant
-        // parsing/processing.
+            // .setExpectedIssuer(issuer)
+            .setVerificationKey(key).setRequireExpirationTime().setAllowedClockSkewInSeconds(30).setRequireSubject()
+            .setExpectedAudience(getAudienceFromConfiguration())
+            .setJwsAlgorithmConstraints(algorithmConstraints).build();
         JwtClaims claims = secondPassJwtConsumer.processToClaims(token);
         logger.debug("verified claims: {}", claims);
         return claims;
     }
 
+    private String getAudienceFromConfiguration() {
+        return jiveProperties.getProperty("audience", "");
+    }
 }

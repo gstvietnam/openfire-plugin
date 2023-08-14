@@ -26,16 +26,18 @@ public class OidcAuthProvider implements AuthProvider {
     }
 
     @Override
-    public void authenticate(final String username, final String password)
-            throws UnauthorizedException {
+    public void authenticate(final String username, final String password) throws UnauthorizedException {
         if (password == null || password.isEmpty()) {
             throw new UnauthorizedException();
         }
-
         try {
             logger.info("trying to login using {}/{}", username, password);
             JwtClaims jwtClaims = tokenValidator.verifyToken(password);
-            //Todo: check account existed
+            String preferredUsername = jwtClaims.getClaimValue("preferred_username", String.class);
+            if (userManager.isRegisteredUser(preferredUsername)) {
+                logger.info("user already exists: {}", preferredUsername);
+                throw new UserAlreadyExistsException("User already exists: " + preferredUsername);
+            }
             importKeycloakUser(jwtClaims);
         } catch (Exception e) {
             logger.info("authentication failed: {}", e.getMessage(), e);
