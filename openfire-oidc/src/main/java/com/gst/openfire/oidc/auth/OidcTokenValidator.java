@@ -55,7 +55,8 @@ public class OidcTokenValidator {
     }
 
     private String getAuthServerFromConfiguration() {
-        return jiveProperties.getProperty("authServer", "");
+        return jiveProperties.getProperty("authServer",
+            "https://gsttech.vddns.vn:8010/realms/CungLamTest");
     }
 
     String getIssuerFromToken(String token) throws MalformedClaimException, InvalidJwtException {
@@ -97,6 +98,6 @@ public class OidcTokenValidator {
     }
 
     private String getAudienceFromConfiguration() {
-        return jiveProperties.getProperty("audience", "");
+        return jiveProperties.getProperty("audience", "defaultAudience");
     }
 }
