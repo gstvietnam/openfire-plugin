@@ -41,9 +41,6 @@ public class OidcTokenValidator {
         this.jiveProperties = jiveProperties;
     }
 
-    public OidcTokenValidator() {
-    }
-
     public JwtClaims verifyToken(String token) throws InvalidJwtException,
         NoSuchAlgorithmException, InvalidKeySpecException, JoseException, IOException {
         String url = getAuthServerFromConfiguration();
@@ -54,9 +51,8 @@ public class OidcTokenValidator {
         return verifyClaims(token, key);
     }
 
-    private String getAuthServerFromConfiguration() {
-        return jiveProperties.getProperty("authServer",
-            "https://gsttech.vddns.vn:8010/realms/CungLamTest");
+    protected String getAuthServerFromConfiguration() {
+        return jiveProperties.get("keycloakServer.auth.url");
     }
 
     String getIssuerFromToken(String token) throws MalformedClaimException, InvalidJwtException {
@@ -90,14 +86,10 @@ public class OidcTokenValidator {
         JwtConsumer secondPassJwtConsumer = new JwtConsumerBuilder()
             // .setExpectedIssuer(issuer)
             .setVerificationKey(key).setRequireExpirationTime().setAllowedClockSkewInSeconds(30).setRequireSubject()
-            .setExpectedAudience(getAudienceFromConfiguration())
+            .setExpectedAudience("account")
             .setJwsAlgorithmConstraints(algorithmConstraints).build();
         JwtClaims claims = secondPassJwtConsumer.processToClaims(token);
         logger.debug("verified claims: {}", claims);
         return claims;
-    }
-
-    private String getAudienceFromConfiguration() {
-        return jiveProperties.getProperty("audience", "defaultAudience");
     }
 }

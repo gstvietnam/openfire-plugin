@@ -34,11 +34,9 @@ public class OidcAuthProvider implements AuthProvider {
             logger.info("trying to login using {}/{}", username, password);
             JwtClaims jwtClaims = tokenValidator.verifyToken(password);
             String preferredUsername = jwtClaims.getClaimValue("preferred_username", String.class);
-            if (userManager.isRegisteredUser(preferredUsername)) {
-                logger.info("user already exists: {}", preferredUsername);
-                throw new UserAlreadyExistsException("User already exists: " + preferredUsername);
+            if (!userManager.isRegisteredUser(preferredUsername)) {
+                importKeycloakUser(jwtClaims);
             }
-            importKeycloakUser(jwtClaims);
         } catch (Exception e) {
             logger.info("authentication failed: {}", e.getMessage(), e);
             throw new UnauthorizedException(e.getMessage());
@@ -47,9 +45,7 @@ public class OidcAuthProvider implements AuthProvider {
 
     private void importKeycloakUser(JwtClaims jwtClaims) {
         try {
-//            String username = jwtClaims.getSubject();
             String username = jwtClaims.getClaimValue("preferred_username", String.class);
-//            String name = jwtClaims.getClaimValue("name", String.class);
             String password = "keycloakuser";
             userManager.createUser(username, password, null, null);
             logger.info("imported user from keycloak using username={}, password={}", username, password);

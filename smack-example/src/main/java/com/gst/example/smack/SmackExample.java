@@ -65,7 +65,7 @@ public class SmackExample {
 //                .enableDefaultDebugger()
                 .setSecurityMode(ConnectionConfiguration.SecurityMode.disabled)
                 .setUsernameAndPassword(username, password)
-                .setXmppDomain("openfire-localhost")
+                .setXmppDomain("localhost")
                 .setHost("localhost")
                 .build();
         AbstractXMPPConnection connection = new XMPPTCPConnection(config);
