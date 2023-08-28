@@ -1,5 +1,4 @@
 package com.gst.openfire.oidc.auth;
-
 import org.jivesoftware.openfire.auth.AuthProvider;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;

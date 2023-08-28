@@ -43,16 +43,13 @@ public class OidcTokenValidator {
 
     public JwtClaims verifyToken(String token) throws InvalidJwtException,
         NoSuchAlgorithmException, InvalidKeySpecException, JoseException, IOException {
-        String url = getAuthServerFromConfiguration();
-        if (url == null) {
-            throw new IllegalStateException("no auth server found in configuration");
-        }
+        String url = getAuthServerUrlFromConfiguration();
         Key key = getKeycloakPublicKey(url);
         return verifyClaims(token, key);
     }
 
-    protected String getAuthServerFromConfiguration() {
-        return jiveProperties.get("keycloakServer.auth.url");
+    protected String getAuthServerUrlFromConfiguration() {
+        return jiveProperties.get("auth.server.url");
     }
 
     String getIssuerFromToken(String token) throws MalformedClaimException, InvalidJwtException {

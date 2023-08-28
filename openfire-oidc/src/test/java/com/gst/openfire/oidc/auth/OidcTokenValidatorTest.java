@@ -34,7 +34,7 @@ class OidcTokenValidatorTest {
     @Test
     @Disabled("This test have to config valid server property")
     void testGetAuthServerFromConfiguration() {
-        String actualResult = validator.getAuthServerFromConfiguration();
+        String actualResult = validator.getAuthServerUrlFromConfiguration();
 
         Assertions.assertEquals(actualResult, "https://demo.ezgo.vn:8010/realms/MEET_ME");
     }
