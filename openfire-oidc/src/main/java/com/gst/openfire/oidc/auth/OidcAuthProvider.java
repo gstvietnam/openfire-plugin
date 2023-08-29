@@ -19,8 +19,7 @@ public class OidcAuthProvider implements AuthProvider {
 
     public OidcAuthProvider() {
         logger.info("Init keycloak auth provider");
-        JiveProperties jiveProperties = JiveProperties.getInstance();
-        tokenValidator = new OidcTokenValidator(jiveProperties);
+        tokenValidator = new OidcTokenValidator();
         userManager = UserManager.getInstance();
     }
 

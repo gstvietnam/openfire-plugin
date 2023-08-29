@@ -20,6 +20,7 @@ Installation
     provider.auth.className=org.jivesoftware.openfire.auth.HybridAuthProvider
     hybridAuthProvider.primaryProvider.className=com.gst.openfire.oidc.auth.OidcAuthProvider
     hybridAuthProvider.secondaryProvider.className=org.jivesoftware.openfire.auth.DefaultAuthProvider
+    oidc.auth.url=https://demo.ezgo.vn:8010/realms/MEET_ME
 ```
 
 4. Restart OpenFire
