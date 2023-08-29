@@ -18,8 +18,8 @@ class OidcAuthProviderTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @CsvSource({"PasswordIsNull_ShouldSuccess, admin, null",
-        "PasswordIsEmpty_ShouldSuccess, 258868686868,  "
+    @CsvSource({"PasswordIsNull, admin, null",
+        "PasswordIsEmpty, 258868686868,  "
     })
     void testAuthenticate_InvalidPassword_ShouldThrowUnauthorizedException(String testName,
                                                                            String username,
