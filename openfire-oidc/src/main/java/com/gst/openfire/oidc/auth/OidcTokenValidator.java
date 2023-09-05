@@ -6,11 +6,9 @@ import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.jwt.consumer.JwtContext;
 import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,19 +32,18 @@ import java.util.stream.Collectors;
 public class OidcTokenValidator {
 
     private static Logger logger = LoggerFactory.getLogger(OidcTokenValidator.class);
-    private static Key keycloakPublicKey;
+    static String authServerUrl = JiveProperties.getInstance().get("oidc.auth.url");
 
-    static {
-        try {
-            keycloakPublicKey = getKeycloakPublicKey(JiveProperties.getInstance().get("oidc.auth.url"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private Key keycloakPublicKey;
+
+    public OidcTokenValidator() throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        logger.info("Init keycloak token validator");
+        this.keycloakPublicKey = getKeycloakPublicKey();
     }
 
-    static PublicKey getKeycloakPublicKey(String realmURL)
+    PublicKey getKeycloakPublicKey()
         throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        URLConnection conn = new URL(realmURL).openConnection();
+        URLConnection conn = new URL(authServerUrl).openConnection();
         try (BufferedReader reader = new BufferedReader(
             new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             String realmInfo = reader.lines().collect(Collectors.joining("\n"));
@@ -58,31 +55,23 @@ public class OidcTokenValidator {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePublic(keySpec);
         }
-
     }
 
-    public OidcTokenValidator() {
-        logger.info("Init keycloak token validator");
+    JiveProperties getJiveProperties() {
+        return JiveProperties.getInstance();
     }
 
-    public JwtClaims verifyToken(String token) throws InvalidJwtException {
-        return verifyClaims(token, keycloakPublicKey);
-    }
-
-    String getIssuerFromToken(String token) throws MalformedClaimException, InvalidJwtException {
-        JwtConsumer firstPassJwtConsumer = new JwtConsumerBuilder().setSkipAllValidators().setDisableRequireSignature()
-            .setSkipSignatureVerification().build();
-        JwtContext jwtContext = firstPassJwtConsumer.process(token);
-        return jwtContext.getJwtClaims().getIssuer();
-    }
-
-    public JwtClaims verifyClaims(String token, Key key) throws InvalidJwtException {
+    public JwtClaims verifyClaims(String token) throws InvalidJwtException {
         AlgorithmConstraints algorithmConstraints = new AlgorithmConstraints(ConstraintType.WHITELIST,
             AlgorithmIdentifiers.RSA_USING_SHA256, AlgorithmIdentifiers.RSA_USING_SHA384);
         JwtConsumer secondPassJwtConsumer = new JwtConsumerBuilder()
-            .setVerificationKey(key).setRequireExpirationTime().setAllowedClockSkewInSeconds(30).setRequireSubject()
+            .setVerificationKey(keycloakPublicKey)
+            .setRequireExpirationTime()
+            .setAllowedClockSkewInSeconds(30)
+            .setRequireSubject()
             .setExpectedAudience("account")
-            .setJwsAlgorithmConstraints(algorithmConstraints).build();
+            .setJwsAlgorithmConstraints(algorithmConstraints)
+            .build();
         JwtClaims claims = secondPassJwtConsumer.processToClaims(token);
         logger.debug("verified claims: {}", claims);
         return claims;

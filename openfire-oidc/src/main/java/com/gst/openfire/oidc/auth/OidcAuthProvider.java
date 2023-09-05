@@ -6,15 +6,25 @@ import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class OidcAuthProvider implements AuthProvider {
     static final String USER_CLAIM_NAME = "preferred_username";
 
     private static Logger logger = LoggerFactory.getLogger(OidcAuthProvider.class);
 
-    public OidcAuthProvider() {
+    private OidcTokenValidator tokenValidator;
+    private UserManager userManager;
+
+    public OidcAuthProvider() throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        this.tokenValidator = getTokenValidator();
+        this.userManager = getUserManager();
     }
 
     @Override
@@ -24,9 +34,9 @@ public class OidcAuthProvider implements AuthProvider {
         }
         try {
             logger.info("trying to login using {}/{}", username, password);
-            JwtClaims jwtClaims = getTokenValidator().verifyToken(password);
+            JwtClaims jwtClaims = tokenValidator.verifyClaims(password);
             String preferredUsername = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
-            if (!getUserManager().isRegisteredUser(preferredUsername)) {
+            if (!userManager.isRegisteredUser(preferredUsername)) {
                 importKeycloakUser(jwtClaims);
             }
         } catch (Exception e) {
@@ -39,7 +49,7 @@ public class OidcAuthProvider implements AuthProvider {
         try {
             String username = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
             String password = "keycloakuser";
-            getUserManager().createUser(username, password, null, null);
+            userManager.createUser(username, password, null, null);
             logger.info("imported user from keycloak using username={}, password={}", username, password);
         } catch (MalformedClaimException | UserAlreadyExistsException e) {
             logger.error("failed to import keycloak user" + e.getMessage(), e);
@@ -88,11 +98,12 @@ public class OidcAuthProvider implements AuthProvider {
         throw new UnsupportedOperationException();
     }
 
-    UserManager getUserManager() {
-        return UserManager.getInstance();
+    OidcTokenValidator getTokenValidator() throws JoseException, IOException,
+        NoSuchAlgorithmException, InvalidKeySpecException {
+        return new OidcTokenValidator();
     }
 
-    OidcTokenValidator getTokenValidator() {
-        return new OidcTokenValidator();
+    UserManager getUserManager() {
+        return UserManager.getInstance();
     }
 }
