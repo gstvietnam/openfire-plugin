@@ -57,10 +57,6 @@ public class OidcTokenValidator {
         }
     }
 
-    JiveProperties getJiveProperties() {
-        return JiveProperties.getInstance();
-    }
-
     public JwtClaims verifyClaims(String token) throws InvalidJwtException {
         AlgorithmConstraints algorithmConstraints = new AlgorithmConstraints(ConstraintType.WHITELIST,
             AlgorithmIdentifiers.RSA_USING_SHA256, AlgorithmIdentifiers.RSA_USING_SHA384);

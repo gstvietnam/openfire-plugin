@@ -23,8 +23,8 @@ public class OidcAuthProvider implements AuthProvider {
     private UserManager userManager;
 
     public OidcAuthProvider() throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        this.tokenValidator = getTokenValidator();
-        this.userManager = getUserManager();
+        this.tokenValidator = new OidcTokenValidator();
+        this.userManager = UserManager.getInstance();
     }
 
     @Override
@@ -34,9 +34,9 @@ public class OidcAuthProvider implements AuthProvider {
         }
         try {
             logger.info("trying to login using {}/{}", username, password);
-            JwtClaims jwtClaims = tokenValidator.verifyClaims(password);
+            JwtClaims jwtClaims = getTokenValidator().verifyClaims(password);
             String preferredUsername = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
-            if (!userManager.isRegisteredUser(preferredUsername)) {
+            if (!getUserManager().isRegisteredUser(preferredUsername)) {
                 importKeycloakUser(jwtClaims);
             }
         } catch (Exception e) {
@@ -49,7 +49,7 @@ public class OidcAuthProvider implements AuthProvider {
         try {
             String username = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
             String password = "keycloakuser";
-            userManager.createUser(username, password, null, null);
+            getUserManager().createUser(username, password, null, null);
             logger.info("imported user from keycloak using username={}, password={}", username, password);
         } catch (MalformedClaimException | UserAlreadyExistsException e) {
             logger.error("failed to import keycloak user" + e.getMessage(), e);
@@ -98,12 +98,11 @@ public class OidcAuthProvider implements AuthProvider {
         throw new UnsupportedOperationException();
     }
 
-    OidcTokenValidator getTokenValidator() throws JoseException, IOException,
-        NoSuchAlgorithmException, InvalidKeySpecException {
-        return new OidcTokenValidator();
+    OidcTokenValidator getTokenValidator() {
+        return this.tokenValidator;
     }
 
     UserManager getUserManager() {
-        return UserManager.getInstance();
+        return this.userManager;
     }
 }

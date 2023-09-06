@@ -14,6 +14,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.verification.VerificationMode;
@@ -34,8 +35,10 @@ class OidcAuthProviderTest {
 
     @BeforeEach
     void setup() throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        OidcTokenValidator.authServerUrl = "https://demo.ezgo.vn:8010/realms/TEST";
-        authProvider = Mockito.spy(OidcAuthProvider.class);
+        try (MockedConstruction<OidcAuthProvider> mockedConstruction =
+                 Mockito.mockConstruction(OidcAuthProvider.class)) {
+            authProvider = Mockito.spy(new OidcAuthProvider());
+        }
         Mockito.lenient().doReturn(tokenValidator).when(authProvider).getTokenValidator();
         Mockito.lenient().doReturn(userManager).when(authProvider).getUserManager();
     }
@@ -44,7 +47,6 @@ class OidcAuthProviderTest {
     @MethodSource("authenticateCaseValidAccountProvider")
     void testAuthenticate_ValidAccount(String testName, boolean isRegistered, VerificationMode callTimes) throws
         InvalidJwtException, MalformedClaimException, UnauthorizedException {
-
         String username = "admin";
         String password = "An2404";
         JwtClaims mockedJwtClaims = Mockito.mock(JwtClaims.class);
