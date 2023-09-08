@@ -4,52 +4,52 @@ import org.jivesoftware.openfire.auth.AuthProvider;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
-import org.jivesoftware.util.JiveProperties;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
 public class OidcAuthProvider implements AuthProvider {
+    static final String USER_CLAIM_NAME = "preferred_username";
 
     private static Logger logger = LoggerFactory.getLogger(OidcAuthProvider.class);
 
     private OidcTokenValidator tokenValidator;
-
     private UserManager userManager;
 
-    public OidcAuthProvider() {
-        logger.info("Init keycloak auth provider");
-        JiveProperties jiveProperties = JiveProperties.getInstance();
-        tokenValidator = new OidcTokenValidator(jiveProperties);
-        userManager = UserManager.getInstance();
+    public OidcAuthProvider() throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        this.tokenValidator = new OidcTokenValidator();
+        this.userManager = UserManager.getInstance();
     }
 
     @Override
-    public void authenticate(final String username, final String password)
-            throws UnauthorizedException {
+    public void authenticate(final String username, final String password) throws UnauthorizedException {
         if (password == null || password.isEmpty()) {
             throw new UnauthorizedException();
         }
-
         try {
             logger.info("trying to login using {}/{}", username, password);
-            JwtClaims jwtClaims = tokenValidator.verifyToken(password);
-            //Todo: check account existed
-            importKeycloakUser(jwtClaims);
+            JwtClaims jwtClaims = getTokenValidator().verifyClaims(password);
+            String preferredUsername = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
+            if (!getUserManager().isRegisteredUser(preferredUsername)) {
+                importKeycloakUser(jwtClaims);
+            }
         } catch (Exception e) {
             logger.info("authentication failed: {}", e.getMessage(), e);
             throw new UnauthorizedException(e.getMessage());
         }
     }
 
-    private void importKeycloakUser(JwtClaims jwtClaims) {
+    void importKeycloakUser(JwtClaims jwtClaims) {
         try {
-//            String username = jwtClaims.getSubject();
-            String username = jwtClaims.getClaimValue("preferred_username", String.class);
-//            String name = jwtClaims.getClaimValue("name", String.class);
+            String username = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
             String password = "keycloakuser";
-            userManager.createUser(username, password, null, null);
+            getUserManager().createUser(username, password, null, null);
             logger.info("imported user from keycloak using username={}, password={}", username, password);
         } catch (MalformedClaimException | UserAlreadyExistsException e) {
             logger.error("failed to import keycloak user" + e.getMessage(), e);
@@ -64,7 +64,7 @@ public class OidcAuthProvider implements AuthProvider {
 
     @Override
     public void setPassword(final String username, final String password)
-            throws UnsupportedOperationException {
+        throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
@@ -98,4 +98,11 @@ public class OidcAuthProvider implements AuthProvider {
         throw new UnsupportedOperationException();
     }
 
+    OidcTokenValidator getTokenValidator() {
+        return this.tokenValidator;
+    }
+
+    UserManager getUserManager() {
+        return this.userManager;
+    }
 }

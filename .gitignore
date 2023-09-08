@@ -4,3 +4,6 @@ target/
 *.orig
 /.classpath
 /.project
+*.xml
+*.idea
+*.iml
