@@ -17,7 +17,6 @@ class OidcTokenValidatorTest {
 
     @BeforeEach
     void setup() throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        OidcTokenValidator.authServerUrl = "https://demo.ezgo.vn:8010/realms/TEST";
         validator = new OidcTokenValidator();
     }
 

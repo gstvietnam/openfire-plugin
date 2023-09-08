@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 public class OidcTokenValidator {
 
     private static Logger logger = LoggerFactory.getLogger(OidcTokenValidator.class);
-    static String authServerUrl = JiveProperties.getInstance().get("oidc.auth.url");
 
     private Key keycloakPublicKey;
 
@@ -43,7 +42,7 @@ public class OidcTokenValidator {
 
     PublicKey getKeycloakPublicKey()
         throws JoseException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        URLConnection conn = new URL(authServerUrl).openConnection();
+        URLConnection conn = new URL(JiveProperties.getInstance().get("oidc.auth.url")).openConnection();
         try (BufferedReader reader = new BufferedReader(
             new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             String realmInfo = reader.lines().collect(Collectors.joining("\n"));
