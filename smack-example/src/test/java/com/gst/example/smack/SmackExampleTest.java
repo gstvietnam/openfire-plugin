@@ -3,18 +3,26 @@ package com.gst.example.smack;
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.chat2.Chat;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.sasl.SASLErrorException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 
 import java.io.IOException;
+import java.util.List;
 
 @Disabled("This test actually connected to the server")
 class SmackExampleTest {
 
+    private static final String DEFAULT_USERNAME = "cunglam";
+    private static final String DEFAULT_PASSWORD = "123";
     private SmackExample smackExample;
 
     @BeforeEach
@@ -45,4 +53,31 @@ class SmackExampleTest {
                 "SASLError using PLAIN: not-authorized");
     }
 
+    @Test
+    void testSendMessage_ShouldSuccess() throws InterruptedException, XMPPException, SmackException, IOException {
+        AbstractXMPPConnection connection = smackExample.createConnection(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+        EntityBareJid jid = JidCreate.entityBareFrom("lamcung@openfire-localhost");
+        Chat chat = smackExample.createChat(connection).chatWith(jid);
+
+        chat.send("Hello!");
+
+        connection.disconnect();
+    }
+
+    //For enable chat history:
+    //Enable MAM (XEP-0313) by installing the MonitoringService plugin in Openfire.
+    //
+    //Now from the Openfire server go to: Server>Archiving>Archiving Settings and check "Archive one-to-one chats" and "Archive group chats" and save click "update setting".
+    //Reference: https://stackoverflow.com/questions/51170390/one-to-one-chat-history-with-open-fire-and-smack/51373416#51373416
+    @Test
+    void testLoadChatHistory_ShouldReturnOldMessages() throws InterruptedException, XMPPException, SmackException, IOException {
+        AbstractXMPPConnection connection = smackExample.createConnection(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+        List<Message> actualResult = smackExample.loadChatHistory(connection);
+
+        System.out.println("oldMessage:" + actualResult);
+        Assertions.assertTrue(actualResult.size() > 0);
+
+        connection.disconnect();
+    }
 }

@@ -6,16 +6,23 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat2.Chat;
 import org.jivesoftware.smack.chat2.ChatManager;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
 import org.jivesoftware.smack.roster.SubscribeListener;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.jivesoftware.smackx.mam.MamManager;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 
 public class SmackExample {
 
@@ -52,7 +59,7 @@ public class SmackExample {
         }
     }
 
-    private ChatManager createChat(AbstractXMPPConnection cunglam) {
+    ChatManager createChat(AbstractXMPPConnection cunglam) {
         ChatManager chatManager = ChatManager.getInstanceFor(cunglam);
         chatManager.addIncomingListener((from, message, chat1)
                 -> System.out.println("New message from " + from + ": " + message.getBody()));
@@ -79,5 +86,17 @@ public class SmackExample {
             System.out.println("receive subscribe request from:" + jid1);
             return SubscribeListener.SubscribeAnswer.Approve;
         });
+    }
+
+    public List<Message> loadChatHistory(AbstractXMPPConnection connection) throws XMPPException.XMPPErrorException, InterruptedException, SmackException.NotConnectedException, SmackException.NotLoggedInException, SmackException.NoResponseException, XmppStringprepException {
+        MamManager mamManager = MamManager.getInstanceFor(connection);
+        Date endDate = Date.from(LocalDateTime.now().minusWeeks(1).atZone(ZoneId.systemDefault()).toInstant());
+        MamManager.MamQueryArgs mamQueryArgs = MamManager.MamQueryArgs.builder()
+                .limitResultsSince(endDate)
+                .limitResultsToJid(JidCreate.entityBareFrom("lamcung@openfire-localhost"))
+                .setResultPageSize(1000000000)
+                .queryLastPage()
+                .build();
+        return mamManager.queryArchive(mamQueryArgs).getMessages();
     }
 }
