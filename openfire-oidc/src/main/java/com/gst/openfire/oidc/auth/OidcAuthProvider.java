@@ -16,6 +16,7 @@ import java.security.spec.InvalidKeySpecException;
 
 public class OidcAuthProvider implements AuthProvider {
     static final String USER_CLAIM_NAME = "preferred_username";
+    static final String USER_CLAIM_FULLNAME = "fullname";
 
     private static Logger logger = LoggerFactory.getLogger(OidcAuthProvider.class);
 
@@ -49,8 +50,10 @@ public class OidcAuthProvider implements AuthProvider {
         try {
             String username = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
             String password = "keycloakuser";
-            getUserManager().createUser(username, password, null, null);
-            logger.info("imported user from keycloak using username={}, password={}", username, password);
+            String fullname = jwtClaims.getClaimValue(USER_CLAIM_FULLNAME, String.class);
+            getUserManager().createUser(username, password, fullname, null);
+            logger.info("imported user from keycloak using username={}, password={}, fullname={}",
+                  username, password, fullname);
         } catch (MalformedClaimException | UserAlreadyExistsException e) {
             logger.error("failed to import keycloak user" + e.getMessage(), e);
         }
@@ -64,7 +67,7 @@ public class OidcAuthProvider implements AuthProvider {
 
     @Override
     public void setPassword(final String username, final String password)
-        throws UnsupportedOperationException {
+          throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
