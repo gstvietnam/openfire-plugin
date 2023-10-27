@@ -2,6 +2,7 @@ package com.gst.openfire.oidc.auth;
 
 import org.jivesoftware.openfire.auth.AuthProvider;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
+import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jose4j.jwt.JwtClaims;
@@ -37,8 +38,12 @@ public class OidcAuthProvider implements AuthProvider {
             logger.info("trying to login using {}/{}", username, password);
             JwtClaims jwtClaims = getTokenValidator().verifyClaims(password);
             String preferredUsername = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
+            User selectedUser = getUserManager().getUser(preferredUsername);
+            String newName = getUserClaimFullName(jwtClaims);
             if (!getUserManager().isRegisteredUser(preferredUsername)) {
                 importKeycloakUser(jwtClaims);
+            } else if (!newName.equals(selectedUser.getName())) {
+                selectedUser.setName(newName);
             }
         } catch (Exception e) {
             logger.info("authentication failed: {}", e.getMessage(), e);
@@ -50,7 +55,7 @@ public class OidcAuthProvider implements AuthProvider {
         try {
             String username = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
             String password = "keycloakuser";
-            String fullname = jwtClaims.getClaimValue(USER_CLAIM_FULLNAME, String.class);
+            String fullname = getUserClaimFullName(jwtClaims);
             getUserManager().createUser(username, password, fullname, null);
             logger.info("imported user from keycloak using username={}, password={}, fullname={}",
                   username, password, fullname);
@@ -107,5 +112,9 @@ public class OidcAuthProvider implements AuthProvider {
 
     UserManager getUserManager() {
         return this.userManager;
+    }
+
+    String getUserClaimFullName(JwtClaims jwtClaims) throws MalformedClaimException {
+        return jwtClaims.getClaimValue(USER_CLAIM_FULLNAME, String.class);
     }
 }
