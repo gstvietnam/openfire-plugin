@@ -13,19 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.verification.VerificationMode;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.stream.Stream;
 
 @ExtendWith(MockitoExtension.class)
 class OidcAuthProviderTest {
@@ -62,7 +58,7 @@ class OidcAuthProviderTest {
         authProvider.authenticate(username, password);
 
         Mockito.verify(tokenValidator).verifyClaims(password);
-        Mockito.verify(authProvider, Mockito.times(1)).importKeycloakUser(mockedJwtClaims);
+        Mockito.verify(authProvider).importKeycloakUser(mockedJwtClaims);
     }
 
     @Test

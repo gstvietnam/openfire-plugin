@@ -38,12 +38,14 @@ public class OidcAuthProvider implements AuthProvider {
             logger.info("trying to login using {}/{}", username, password);
             JwtClaims jwtClaims = getTokenValidator().verifyClaims(password);
             String preferredUsername = jwtClaims.getClaimValue(USER_CLAIM_NAME, String.class);
-            User selectedUser = getUserManager().getUser(preferredUsername);
-            String newName = getUserClaimFullName(jwtClaims);
-            if (!getUserManager().isRegisteredUser(preferredUsername)) {
+            if (getUserManager().isRegisteredUser(preferredUsername)) {
+                User selectedUser = getUserManager().getUser(preferredUsername);
+                String newName = getUserClaimFullName(jwtClaims);
+                if (!newName.equals(selectedUser.getName())) {
+                    selectedUser.setName(newName);
+                }
+            } else {
                 importKeycloakUser(jwtClaims);
-            } else if (!newName.equals(selectedUser.getName())) {
-                selectedUser.setName(newName);
             }
         } catch (Exception e) {
             logger.info("authentication failed: {}", e.getMessage(), e);
