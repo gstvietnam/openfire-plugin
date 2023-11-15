@@ -25,6 +25,8 @@ import java.security.spec.InvalidKeySpecException;
 
 @ExtendWith(MockitoExtension.class)
 class OidcAuthProviderTest {
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "An2404";
 
     private OidcAuthProvider authProvider;
     @Mock
@@ -47,37 +49,53 @@ class OidcAuthProviderTest {
     @Test
     void testAuthenticate_NotRegisteredAccount_ShouldImportUser() throws
           InvalidJwtException, MalformedClaimException, UnauthorizedException {
-        String username = "admin";
-        String password = "An2404";
         JwtClaims mockedJwtClaims = Mockito.mock(JwtClaims.class);
-        Mockito.doReturn(mockedJwtClaims).when(tokenValidator).verifyClaims(password);
-        Mockito.doReturn(username)
+        Mockito.doReturn(mockedJwtClaims).when(tokenValidator).verifyClaims(PASSWORD);
+        Mockito.doReturn(USERNAME)
               .when(mockedJwtClaims).getClaimValue(OidcAuthProvider.USER_CLAIM_NAME, String.class);
-        Mockito.doReturn(false).when(userManager).isRegisteredUser(username);
+        Mockito.doReturn(false).when(userManager).isRegisteredUser(USERNAME);
 
-        authProvider.authenticate(username, password);
+        authProvider.authenticate(USERNAME, PASSWORD);
 
-        Mockito.verify(tokenValidator).verifyClaims(password);
+        Mockito.verify(tokenValidator).verifyClaims(PASSWORD);
         Mockito.verify(authProvider).importKeycloakUser(mockedJwtClaims);
     }
 
     @Test
-    void testAuthenticate_RegisteredAccountAndNameNoChange_ShouldNotImportUserAndSetNewName() throws
+    void testAuthenticate_RegisteredAccountAndNameNoChange_ShouldNotImportUserAndNotSetNewName() throws
           InvalidJwtException, MalformedClaimException, UnauthorizedException, UserNotFoundException {
-        String username = "admin";
-        String password = "An2404";
         JwtClaims mockedJwtClaims = Mockito.mock(JwtClaims.class);
-        Mockito.doReturn(mockedJwtClaims).when(tokenValidator).verifyClaims(password);
-        Mockito.doReturn(username)
+        Mockito.doReturn(mockedJwtClaims).when(tokenValidator).verifyClaims(PASSWORD);
+        Mockito.doReturn(USERNAME)
               .when(mockedJwtClaims).getClaimValue(OidcAuthProvider.USER_CLAIM_NAME, String.class);
-        Mockito.doReturn(true).when(userManager).isRegisteredUser(username);
+        Mockito.doReturn(true).when(userManager).isRegisteredUser(USERNAME);
         String mockedNewName = "newName";
-        Mockito.doReturn(mockedUser).when(userManager).getUser(username);
+        Mockito.doReturn(mockedUser).when(userManager).getUser(USERNAME);
+        Mockito.doReturn(mockedNewName).when(mockedUser).getName();
         Mockito.doReturn(mockedNewName).when(authProvider).getUserClaimFullName(mockedJwtClaims);
 
-        authProvider.authenticate(username, password);
+        authProvider.authenticate(USERNAME, PASSWORD);
 
-        Mockito.verify(tokenValidator).verifyClaims(password);
+        Mockito.verify(tokenValidator).verifyClaims(PASSWORD);
+        Mockito.verify(authProvider, Mockito.never()).importKeycloakUser(mockedJwtClaims);
+        Mockito.verify(mockedUser, Mockito.never()).setName(mockedNewName);
+    }
+
+    @Test
+    void testAuthenticate_RegisteredAccountAndNameChange_ShouldNotImportUserAndSetNewName() throws
+          InvalidJwtException, MalformedClaimException, UnauthorizedException, UserNotFoundException {
+        JwtClaims mockedJwtClaims = Mockito.mock(JwtClaims.class);
+        Mockito.doReturn(mockedJwtClaims).when(tokenValidator).verifyClaims(PASSWORD);
+        Mockito.doReturn(USERNAME)
+              .when(mockedJwtClaims).getClaimValue(OidcAuthProvider.USER_CLAIM_NAME, String.class);
+        Mockito.doReturn(true).when(userManager).isRegisteredUser(USERNAME);
+        String mockedNewName = "newName";
+        Mockito.doReturn(mockedUser).when(userManager).getUser(USERNAME);
+        Mockito.doReturn(mockedNewName).when(authProvider).getUserClaimFullName(mockedJwtClaims);
+
+        authProvider.authenticate(USERNAME, PASSWORD);
+
+        Mockito.verify(tokenValidator).verifyClaims(PASSWORD);
         Mockito.verify(authProvider, Mockito.never()).importKeycloakUser(mockedJwtClaims);
         Mockito.verify(mockedUser).setName(mockedNewName);
     }
